@@ -1,10 +1,16 @@
 package controller
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"project-bph-sekretaris/dto"
 	"project-bph-sekretaris/service"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,16 +26,6 @@ func NewArsipSuratController(arsipSuratService service.ArsipSuratService) ArsipS
 }
 
 func (ctrl *arsipSuratControllerImpl) Create(c *gin.Context) {
-	var request dto.ArsipSuratRequest
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, dto.ArsipSuratResponse{
-			Status:  "error",
-			Message: err.Error(),
-		})
-		return
-	}
-
 	// Get user ID from context (set by auth middleware)
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -38,6 +34,74 @@ func (ctrl *arsipSuratControllerImpl) Create(c *gin.Context) {
 			Message: "Unauthorized",
 		})
 		return
+	}
+	// Parse form data
+	nomor := c.PostForm("nomor")
+	tanggal := c.PostForm("tanggal")
+	perihal := c.PostForm("perihal")
+	tipe := c.PostForm("tipe")
+	keterangan := c.PostForm("keterangan")
+
+	// Debug logging
+	fmt.Printf("Received arsip data: nomor=%s, tanggal=%s, perihal=%s, tipe=%s, keterangan=%s\n",
+		nomor, tanggal, perihal, tipe, keterangan)
+
+	if nomor == "" || tanggal == "" || perihal == "" || tipe == "" {
+		fmt.Printf("Missing required fields validation failed\n")
+		c.JSON(http.StatusBadRequest, dto.ArsipSuratResponse{
+			Status:  "error",
+			Message: "Missing required fields: nomor, tanggal, perihal, tipe",
+		})
+		return
+	}
+
+	// Handle file upload
+	var fileURL string
+	file, header, err := c.Request.FormFile("file")
+	if err == nil {
+		defer file.Close()
+
+		// Create uploads directory if it doesn't exist
+		uploadsDir := "./uploads"
+		if _, err := os.Stat(uploadsDir); os.IsNotExist(err) {
+			os.MkdirAll(uploadsDir, 0755)
+		}
+
+		// Generate unique filename
+		timestamp := time.Now().Unix()
+		filename := fmt.Sprintf("%d_%s", timestamp, strings.ReplaceAll(header.Filename, " ", "_"))
+		filePath := filepath.Join(uploadsDir, filename)
+
+		// Save file
+		dst, err := os.Create(filePath)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, dto.ArsipSuratResponse{
+				Status:  "error",
+				Message: "Failed to save file: " + err.Error(),
+			})
+			return
+		}
+		defer dst.Close()
+
+		if _, err := io.Copy(dst, file); err != nil {
+			c.JSON(http.StatusInternalServerError, dto.ArsipSuratResponse{
+				Status:  "error",
+				Message: "Failed to save file: " + err.Error(),
+			})
+			return
+		}
+
+		fileURL = fmt.Sprintf("/uploads/%s", filename)
+	}
+
+	// Create request object with proper structure
+	request := dto.ArsipSuratRequest{
+		Nomor:      nomor,
+		Tanggal:    tanggal,
+		Perihal:    perihal,
+		Tipe:       tipe,
+		Keterangan: keterangan,
+		FileURL:    fileURL,
 	}
 
 	arsipSurat, err := ctrl.arsipSuratService.Create(request, userID.(uint))

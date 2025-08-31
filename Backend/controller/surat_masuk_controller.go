@@ -9,4 +9,5 @@ type SuratMasukController interface {
 	GetByStatus(c *gin.Context)
 	Update(c *gin.Context)
 	Delete(c *gin.Context)
+	CheckNoSurat(c *gin.Context)
 }

@@ -127,3 +127,14 @@ func (s *suratMasukServiceImpl) Delete(id uint) error {
 
 	return s.suratMasukRepo.Delete(id)
 }
+
+func (s *suratMasukServiceImpl) CheckNoSuratExists(noSurat string) (bool, error) {
+	_, err := s.suratMasukRepo.GetByNoSurat(noSurat)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil // Nomor surat tidak ditemukan, berarti belum ada
+		}
+		return false, err // Error lain
+	}
+	return true, nil // Nomor surat ditemukan, berarti sudah ada
+}

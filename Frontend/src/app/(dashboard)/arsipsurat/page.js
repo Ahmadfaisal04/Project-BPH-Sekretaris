@@ -23,6 +23,7 @@ import ArchiveIcon from "@mui/icons-material/Archive";
 import SearchIcon from "@mui/icons-material/Search";
 import { styled } from "@mui/material/styles";
 import { API_ENDPOINTS, getHeaders } from "@/config/api";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // Tema
 const theme = createTheme({
@@ -57,6 +58,7 @@ const ContentWrapper = styled(Box)`
 `;
 
 export default function ArsipSurat() {
+  const { canView, role } = usePermissions();
   const [arsipSurat, setArsipSurat] = useState([]);
   const [filteredArsip, setFilteredArsip] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,80 +70,45 @@ export default function ArsipSurat() {
     try {
       console.log("Fetching arsip data...");
 
-      const [resMasuk, resKeluar] = await Promise.all([
-        fetch(API_ENDPOINTS.SURAT_MASUK_GET_ALL, { headers: getHeaders() }),
-        fetch(API_ENDPOINTS.SURAT_KELUAR_GET_ALL, { headers: getHeaders() }),
-      ]);
+      // Fetch from actual arsip surat endpoint
+      const response = await fetch(API_ENDPOINTS.ARSIP_SURAT_GET_ALL, {
+        headers: getHeaders(),
+      });
 
-      console.log(
-        "Response status - Masuk:",
-        resMasuk.status,
-        "Keluar:",
-        resKeluar.status
-      );
+      console.log("Arsip response status:", response.status);
 
-      if (!resMasuk.ok || !resKeluar.ok) {
+      if (!response.ok) {
         throw new Error(
-          `Gagal mengambil data arsip - Masuk: ${resMasuk.status}, Keluar: ${resKeluar.status}`
+          `Gagal mengambil data arsip - Status: ${response.status}`
         );
       }
 
-      const dataMasukResponse = await resMasuk.json();
-      const dataKeluarResponse = await resKeluar.json();
+      const arsipResponse = await response.json();
+      console.log("Raw arsip API response:", arsipResponse);
 
-      console.log("Raw API response - Masuk:", dataMasukResponse);
-      console.log("Raw API response - Keluar:", dataKeluarResponse);
+      // Handle response structure
+      const arsipData = arsipResponse?.data || arsipResponse || [];
+      console.log("Processed arsip data:", arsipData);
 
-      // Handle different response structures
-      const dataMasuk = dataMasukResponse?.data || dataMasukResponse || [];
-      const dataKeluar = dataKeluarResponse?.data || dataKeluarResponse || [];
+      // Format data for display
+      const formattedData = Array.isArray(arsipData)
+        ? arsipData.map((item) => ({
+            nomor: item.nomor || item.no_surat || "-",
+            tanggal: item.tanggal
+              ? new Date(item.tanggal).toLocaleDateString("id-ID")
+              : "-",
+            perihal: item.perihal || "-",
+            jenisSurat:
+              item.tipe_surat === "Surat Keluar" || item.tipe === "Surat Keluar"
+                ? "keluar"
+                : "masuk",
+            fileUrl: item.file_url || "#",
+          }))
+        : [];
 
-      console.log(
-        "Processed data - Masuk:",
-        dataMasuk,
-        "Type:",
-        typeof dataMasuk,
-        "IsArray:",
-        Array.isArray(dataMasuk)
-      );
-      console.log(
-        "Processed data - Keluar:",
-        dataKeluar,
-        "Type:",
-        typeof dataKeluar,
-        "IsArray:",
-        Array.isArray(dataKeluar)
-      ); // Ensure data is arrays
-      const masukArray = Array.isArray(dataMasuk) ? dataMasuk : [];
-      const keluarArray = Array.isArray(dataKeluar) ? dataKeluar : [];
-
-      const masuk = masukArray.map((s) => ({
-        ...s,
-        jenisSurat: "masuk",
-        nomor: s.no_surat, // Map to correct field
-        tanggal: s.tanggal_surat
-          ? new Date(s.tanggal_surat).toLocaleDateString("id-ID")
-          : "-",
-        asal_display: s.asal_surat || s.tujuan_surat,
-        sumber: "masuk",
-      }));
-      const keluar = keluarArray.map((s) => ({
-        ...s,
-        jenisSurat: "keluar",
-        nomor: s.no_surat, // Map to correct field
-        tanggal: s.tanggal_surat
-          ? new Date(s.tanggal_surat).toLocaleDateString("id-ID")
-          : "-",
-        asal_display: s.tujuan_surat || s.asal_surat,
-        sumber: "keluar",
-      }));
-      const combined = [...masuk, ...keluar].sort(
-        (a, b) => new Date(b.tanggal_surat) - new Date(a.tanggal_surat)
-      );
-
-      console.log("Combined arsip data:", combined);
-      setArsipSurat(combined);
-      setFilteredArsip(combined);
+      console.log("Formatted arsip data:", formattedData);
+      setArsipSurat(formattedData);
+      setFilteredArsip(formattedData);
     } catch (err) {
       console.error("Error fetching arsip:", err);
       setError(err.message);

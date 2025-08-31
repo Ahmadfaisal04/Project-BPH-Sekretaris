@@ -13,4 +13,5 @@ type SuratKeluarService interface {
 	GetByStatus(status string) ([]model.SuratKeluar, error)
 	Update(id uint, request dto.SuratKeluarUpdateRequest) (*model.SuratKeluar, error)
 	Delete(id uint) error
+	CheckNoSuratExists(noSurat string) (bool, error)
 }

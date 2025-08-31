@@ -11,4 +11,5 @@ type SuratKeluarRepository interface {
 	Update(suratKeluar *model.SuratKeluar) error
 	Delete(id uint) error
 	Count() (int64, error)
+	GetByNoSurat(noSurat string) (*model.SuratKeluar, error)
 }

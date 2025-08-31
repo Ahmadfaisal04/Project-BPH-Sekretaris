@@ -21,9 +21,12 @@ func NewArsipSuratService(arsipSuratRepo repository.ArsipSuratRepository) ArsipS
 
 func (s *arsipSuratServiceImpl) Create(request dto.ArsipSuratRequest, diarsipkanOleh uint) (*model.ArsipSurat, error) {
 	arsipSurat := &model.ArsipSurat{
-		SuratID:        request.SuratID,
-		TipeSurat:      request.TipeSurat,
+		Nomor:          request.Nomor,
+		Tanggal:        request.Tanggal,
+		Perihal:        request.Perihal,
+		TipeSurat:      request.Tipe,
 		Keterangan:     request.Keterangan,
+		FileURL:        request.FileURL,
 		DiarsipkanOleh: diarsipkanOleh,
 	}
 

@@ -59,7 +59,7 @@ func main() {
 	// Drop existing tables to force recreation with all new columns
 	fmt.Println("Dropping existing tables to recreate with new schema...")
 	db.Exec("DROP TABLE IF EXISTS arsip_surats")
-	db.Exec("DROP TABLE IF EXISTS surat_keluars") 
+	db.Exec("DROP TABLE IF EXISTS surat_keluars")
 	db.Exec("DROP TABLE IF EXISTS surat_masuks")
 	db.Exec("DROP TABLE IF EXISTS users")
 
@@ -77,22 +77,22 @@ func main() {
 
 	fmt.Println("Database migration completed successfully!")
 
-	// Create default admin user if not exists
+	// Create default users if not exists
 	var userCount int64
 	db.Model(&model.User{}).Count(&userCount)
 
 	if userCount == 0 {
-		fmt.Println("Creating default admin user...")
+		fmt.Println("Creating default users...")
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		// Create Admin User (Ketua)
+		hashedPasswordAdmin, err := bcrypt.GenerateFromPassword([]byte("Coconut013"), bcrypt.DefaultCost)
 		if err != nil {
-			log.Fatal("Failed to hash password:", err)
+			log.Fatal("Failed to hash admin password:", err)
 		}
-
 		admin := model.User{
-			Name:         "Administrator", 
-			Email:        "admin@bph.org",
-			PasswordHash: string(hashedPassword),
+			Name:         "Muhammad Syarif",
+			Email:        "13.24.008",
+			PasswordHash: string(hashedPasswordAdmin),
 			Role:         "ketua",
 		}
 
@@ -100,16 +100,37 @@ func main() {
 			log.Fatal("Failed to create admin user:", err)
 		}
 
-		fmt.Println("Default admin user created successfully!")
-		fmt.Println("Email: admin@bph.org")
-		fmt.Println("Password: admin123")
+		// Create Sekretaris User - Resky Amalia Rusli
+		hashedPasswordSekretaris, err := bcrypt.GenerateFromPassword([]byte("Coconut013"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatal("Failed to hash sekretaris password:", err)
+		}
+
+		sekretaris := model.User{
+			Name:         "Rezky Amaliah Rusli",
+			Email:        "13.24.003",
+			PasswordHash: string(hashedPasswordSekretaris),
+			Role:         "sekretaris",
+		}
+
+		if err := db.Create(&sekretaris).Error; err != nil {
+			log.Fatal("Failed to create sekretaris user:", err)
+		}
+		fmt.Println("Default users created successfully!")
+		fmt.Println("=== LOGIN CREDENTIALS ===")
+		fmt.Println("1. Admin (Ketua):")
+		fmt.Println("   Email/NRA: 13.24.008")
+		fmt.Println("   Password: Coconut013")
+		fmt.Println("2. Sekretaris - Rezky Amaliah Rusli:")
+		fmt.Println("   Email/NRA: 13.24.003")
+		fmt.Println("   Password: Coconut013")
 	} else {
-		fmt.Println("Admin user already exists, skipping creation.")
+		fmt.Println("Users already exist, skipping creation.")
 	}
 
 	// Show table structures
 	fmt.Println("\nTable structures:")
-	
+
 	// Show SuratKeluar structure
 	rows, err := db.Raw("DESCRIBE surat_keluars").Rows()
 	if err == nil {

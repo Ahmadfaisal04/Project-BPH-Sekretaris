@@ -266,3 +266,34 @@ func (ctrl *suratKeluarControllerImpl) GetTemplates(c *gin.Context) {
 
 	c.JSON(http.StatusOK, templates)
 }
+
+func (ctrl *suratKeluarControllerImpl) CheckNoSurat(c *gin.Context) {
+	noSurat := c.Query("no_surat")
+	if noSurat == "" {
+		c.JSON(http.StatusBadRequest, dto.SuratKeluarResponse{
+			Status:  "error",
+			Message: "Nomor surat harus diisi",
+		})
+		return
+	}
+
+	exists, err := ctrl.suratKeluarService.CheckNoSuratExists(noSurat)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, dto.SuratKeluarResponse{
+			Status:  "error",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"exists": exists,
+		"message": func() string {
+			if exists {
+				return "Nomor surat sudah ada"
+			}
+			return "Nomor surat tersedia"
+		}(),
+	})
+}

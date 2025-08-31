@@ -41,16 +41,12 @@ func main() {
 	arsipSuratController := controller.NewArsipSuratController(arsipSuratService)
 
 	// Initialize Gin router
-	router := gin.Default() // CORS middleware - Allow all origins for development
+	router := gin.Default()
+	// CORS middleware
 	router.Use(func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		if origin == "" {
-			origin = "*"
-		}
-		c.Header("Access-Control-Allow-Origin", origin)
+		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -59,6 +55,9 @@ func main() {
 
 		c.Next()
 	})
+
+	// Serve static files for uploads
+	router.Static("/uploads", "./uploads")
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
@@ -81,14 +80,14 @@ func main() {
 	// Protected routes (with auth middleware)
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(authService))
-	{
-		// Surat Masuk routes
+	{ // Surat Masuk routes
 		suratMasukRoutes := protected.Group("/surat-masuk")
 		{
 			suratMasukRoutes.POST("", suratMasukController.Create)
 			suratMasukRoutes.GET("", suratMasukController.GetAll)
 			suratMasukRoutes.GET("/:id", suratMasukController.GetByID)
 			suratMasukRoutes.GET("/status", suratMasukController.GetByStatus)
+			suratMasukRoutes.GET("/check-no-surat", suratMasukController.CheckNoSurat)
 			suratMasukRoutes.PUT("/:id", suratMasukController.Update)
 			suratMasukRoutes.DELETE("/:id", suratMasukController.Delete)
 		}
@@ -99,7 +98,7 @@ func main() {
 			suratKeluarRoutes.GET("", suratKeluarController.GetAll)
 			suratKeluarRoutes.GET("/:id", suratKeluarController.GetByID)
 			suratKeluarRoutes.GET("/status", suratKeluarController.GetByStatus)
-			suratKeluarRoutes.GET("/templates", suratKeluarController.GetTemplates)
+			suratKeluarRoutes.GET("/check-no-surat", suratKeluarController.CheckNoSurat)
 			suratKeluarRoutes.PUT("/:id", suratKeluarController.Update)
 			suratKeluarRoutes.DELETE("/:id", suratKeluarController.Delete)
 		}
@@ -114,12 +113,10 @@ func main() {
 			arsipSuratRoutes.PUT("/:id", arsipSuratController.Update)
 			arsipSuratRoutes.DELETE("/:id", arsipSuratController.Delete)
 		}
-	}
-
-	// Get port from environment or use default
+	} // Get port from environment or use default
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8088"
 	}
 
 	log.Printf("Server starting on port %s", port)

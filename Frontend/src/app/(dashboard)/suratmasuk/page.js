@@ -37,6 +37,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import { API_ENDPOINTS, getHeaders } from "@/config/api";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // Styled components
 const StyledCard = styled(Card)({
@@ -67,6 +68,7 @@ const FilePreviewBox = styled(Box)(({ theme }) => ({
 }));
 
 export default function SuratMasuk() {
+  const { canAdd, canEdit, canDelete, role } = usePermissions();
   const [rows, setRows] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -94,6 +96,11 @@ export default function SuratMasuk() {
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     id: null,
+  });
+  const [noSuratValidation, setNoSuratValidation] = useState({
+    isValid: null,
+    message: "",
+    isChecking: false,
   });
 
   useEffect(() => {
@@ -153,7 +160,6 @@ export default function SuratMasuk() {
       setLoading(false);
     }
   }, []);
-
   const resetForm = () => {
     setFormData({
       nomor: "",
@@ -167,8 +173,8 @@ export default function SuratMasuk() {
     setPreviewFile(null);
     setExistingFile(null);
     setEditingId(null);
+    setNoSuratValidation({ isValid: null, message: "", isChecking: false });
   };
-
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "file" && files[0]) {
@@ -178,11 +184,80 @@ export default function SuratMasuk() {
       setExistingFile(null);
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+
+      // Check nomor surat when it changes
+      if (name === "nomor" && !editingId) {
+        debouncedCheckNoSurat(value);
+      }
     }
   };
 
   const handleDateChange = (date) => {
     setFormData((prev) => ({ ...prev, tanggal: date }));
+  };
+
+  // Fungsi untuk mengecek nomor surat
+  const checkNoSurat = async (noSurat) => {
+    if (!noSurat || noSurat.trim() === "") {
+      setNoSuratValidation({ isValid: null, message: "", isChecking: false });
+      return;
+    }
+
+    setNoSuratValidation({ isValid: null, message: "", isChecking: true });
+
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.SURAT_MASUK_CHECK_NO}?no_surat=${encodeURIComponent(
+          noSurat
+        )}`,
+        {
+          method: "GET",
+          headers: getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Gagal mengecek nomor surat");
+      }
+
+      const result = await response.json();
+
+      if (result.exists) {
+        setNoSuratValidation({
+          isValid: false,
+          message: "Nomor surat sudah ada! Silakan gunakan nomor yang berbeda.",
+          isChecking: false,
+        });
+      } else {
+        setNoSuratValidation({
+          isValid: true,
+          message: "Nomor surat tersedia.",
+          isChecking: false,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking nomor surat:", error);
+      setNoSuratValidation({
+        isValid: null,
+        message: "Gagal mengecek nomor surat. Silakan coba lagi.",
+        isChecking: false,
+      });
+    }
+  };
+
+  // Debounced version untuk avoid spam API calls
+  const [checkTimeout, setCheckTimeout] = useState(null);
+
+  const debouncedCheckNoSurat = (noSurat) => {
+    if (checkTimeout) {
+      clearTimeout(checkTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      checkNoSurat(noSurat);
+    }, 500); // Wait 500ms after user stops typing
+
+    setCheckTimeout(timeout);
   };
   const handleSave = async () => {
     if (
@@ -199,22 +274,45 @@ export default function SuratMasuk() {
       return;
     }
 
+    // Check nomor surat validation for new entries (not when editing)
+    if (!editingId && noSuratValidation.isValid === false) {
+      setSnackbar({
+        open: true,
+        message: "Nomor surat sudah ada! Silakan gunakan nomor yang berbeda.",
+        severity: "error",
+      });
+      return;
+    } // If still checking nomor surat, wait for validation
+    if (!editingId && noSuratValidation.isChecking) {
+      setSnackbar({
+        open: true,
+        message: "Sedang mengecek nomor surat. Silakan tunggu sebentar.",
+        severity: "warning",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // Prepare data in backend format
-      const requestData = {
-        no_surat: formData.nomor,
-        asal_surat: formData.asal,
-        perihal: formData.perihal,
-        tanggal_surat:
-          dayjs(formData.tanggal).format("YYYY-MM-DD") + "T00:00:00Z",
-        tanggal_diterima:
-          dayjs(formData.tanggal).format("YYYY-MM-DD") + "T00:00:00Z",
-        file_surat: formData.file
-          ? formData.file.name
-          : formData.existingFile || "",
-        status: "Baru",
-      };
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append("no_surat", formData.nomor);
+      formDataToSend.append("asal_surat", formData.asal);
+      formDataToSend.append("perihal", formData.perihal);
+      formDataToSend.append(
+        "tanggal_surat",
+        dayjs(formData.tanggal).format("YYYY-MM-DD") + "T00:00:00Z"
+      );
+      formDataToSend.append(
+        "tanggal_diterima",
+        dayjs(formData.tanggal).format("YYYY-MM-DD") + "T00:00:00Z"
+      );
+      formDataToSend.append("status", "Baru");
+
+      // Add file if present
+      if (formData.file) {
+        formDataToSend.append("file_surat", formData.file);
+      }
 
       const endpoint = editingId
         ? API_ENDPOINTS.SURAT_MASUK_UPDATE(editingId)
@@ -222,8 +320,8 @@ export default function SuratMasuk() {
 
       const response = await fetch(endpoint, {
         method: editingId ? "PUT" : "POST",
-        headers: getHeaders(),
-        body: JSON.stringify(requestData),
+        headers: getHeaders(true), // true for FormData
+        body: formDataToSend,
       });
 
       if (!response.ok) {
@@ -338,41 +436,43 @@ export default function SuratMasuk() {
 
   return (
     <StyledCard>
+      {" "}
       <HeaderBox>
         <Typography variant="h6">Data Surat Masuk</Typography>
-        <Button
-          variant="outlined"
-          startIcon={<MoveToInboxIcon />}
-          sx={{
-            backgroundColor: "#ffffff",
-            color: "#3097BA",
-            borderColor: "#3097BA",
-            "&:hover": {
-              backgroundColor: "#f0f0f0",
+        {canAdd() && (
+          <Button
+            variant="outlined"
+            startIcon={<MoveToInboxIcon />}
+            sx={{
+              backgroundColor: "#ffffff",
+              color: "#3097BA",
               borderColor: "#3097BA",
-            },
-          }}
-          onClick={() => {
-            setShowModal(true);
-            setEditingId(null);
-            setFormData({
-              nomor: "",
-              tanggal: null,
-              perihal: "",
-              asal: "",
-              file: null,
-              existingFile: "",
-              existingTitle: "",
-            });
-            setPreviewFile(null);
-            setExistingFile(null);
-            setError(null);
-          }}
-        >
-          Tambah Surat
-        </Button>
+              "&:hover": {
+                backgroundColor: "#f0f0f0",
+                borderColor: "#3097BA",
+              },
+            }}
+            onClick={() => {
+              setShowModal(true);
+              setEditingId(null);
+              setFormData({
+                nomor: "",
+                tanggal: null,
+                perihal: "",
+                asal: "",
+                file: null,
+                existingFile: "",
+                existingTitle: "",
+              });
+              setPreviewFile(null);
+              setExistingFile(null);
+              setError(null);
+            }}
+          >
+            Tambah Surat
+          </Button>
+        )}
       </HeaderBox>
-
       <CardContent>
         {loading && <CircularProgress />}
         {error && <Alert severity="error">{error}</Alert>}
@@ -392,10 +492,15 @@ export default function SuratMasuk() {
                 </TableCell>
                 <TableCell>
                   <strong>Asal</strong>
-                </TableCell>
+                </TableCell>{" "}
                 <TableCell>
                   <strong>File</strong>
                 </TableCell>
+                {(canEdit() || canDelete()) && (
+                  <TableCell>
+                    <strong>Aksi</strong>
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -408,35 +513,44 @@ export default function SuratMasuk() {
                       {dayjs(row.tanggal).format("DD-MM-YYYY")}
                     </TableCell>
                     <TableCell>{row.perihal}</TableCell>
-                    <TableCell>{row.asal}</TableCell>
+                    <TableCell>{row.asal}</TableCell>{" "}
                     <TableCell>
                       {row.file && (
                         <Tooltip title="Lihat File">
                           <IconButton
                             component="a"
-                            href={`http://localhost:8088/${row.file.replace(
-                              /^\./,
-                              ""
-                            )}`}
+                            href={`http://localhost:8088${
+                              row.file.startsWith("/")
+                                ? row.file
+                                : "/" + row.file
+                            }`}
                             target="_blank"
                           >
                             <DescriptionIcon />
                           </IconButton>
                         </Tooltip>
-                      )}
+                      )}{" "}
                     </TableCell>
-                    <TableCell>
-                      <Tooltip title="Edit">
-                        <IconButton onClick={() => handleEdit(row)}>
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Hapus">
-                        <IconButton onClick={() => handleDeleteClick(row.id)}>
-                          <DeleteIcon color="error" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+                    {(canEdit() || canDelete()) && (
+                      <TableCell>
+                        {canEdit() && (
+                          <Tooltip title="Edit">
+                            <IconButton onClick={() => handleEdit(row)}>
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canDelete() && (
+                          <Tooltip title="Hapus">
+                            <IconButton
+                              onClick={() => handleDeleteClick(row.id)}
+                            >
+                              <DeleteIcon color="error" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
             </TableBody>
@@ -451,18 +565,19 @@ export default function SuratMasuk() {
           />
         </TableContainer>
       </CardContent>
-
-      {/* Dialog Form */}
+      {/* Dialog Form */}{" "}
       <Dialog
         open={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          resetForm();
+        }}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>
           {editingId ? "Edit Surat Masuk" : "Tambah Surat Masuk"}
-        </DialogTitle>
-
+        </DialogTitle>{" "}
         <DialogContent>
           <TextField
             fullWidth
@@ -471,6 +586,29 @@ export default function SuratMasuk() {
             name="nomor"
             value={formData.nomor}
             onChange={handleInputChange}
+            error={!editingId && noSuratValidation.isValid === false}
+            helperText={
+              !editingId && noSuratValidation.message
+                ? noSuratValidation.message
+                : editingId
+                ? "Mode edit - validasi nomor dilewati"
+                : ""
+            }
+            InputProps={{
+              endAdornment: !editingId && noSuratValidation.isChecking && (
+                <CircularProgress size={20} />
+              ),
+            }}
+            sx={{
+              "& .MuiFormHelperText-root": {
+                color:
+                  noSuratValidation.isValid === false
+                    ? "error.main"
+                    : noSuratValidation.isValid === true
+                    ? "success.main"
+                    : "text.secondary",
+              },
+            }}
           />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
@@ -543,11 +681,15 @@ export default function SuratMasuk() {
               </Avatar>
               <Typography variant="body2">
                 {formData.file?.name || existingFile?.split("/").pop()}
-              </Typography>
+              </Typography>{" "}
               <a
                 href={
                   previewFile ||
-                  `http://localhost:8088${existingFile.replace(/^\./, "")}`
+                  `http://localhost:8088${
+                    existingFile.startsWith("/")
+                      ? existingFile
+                      : "/" + existingFile
+                  }`
                 }
                 target="_blank"
                 rel="noopener noreferrer"
@@ -556,26 +698,13 @@ export default function SuratMasuk() {
               </a>
             </FilePreviewBox>
           )}
-        </DialogContent>
-
+        </DialogContent>{" "}
         <DialogActions>
           <Button
             variant="contained"
             onClick={() => {
               setShowModal(false);
-              setEditingId(null);
-              setFormData({
-                nomor: "",
-                tanggal: null,
-                perihal: "",
-                asal: "",
-                file: null,
-                existingFile: "",
-                existingTitle: "",
-              });
-              setPreviewFile(null);
-              setExistingFile(null);
-              setError(null);
+              resetForm();
             }}
             sx={{
               backgroundColor: "#3097BA",
@@ -609,7 +738,6 @@ export default function SuratMasuk() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
@@ -625,7 +753,6 @@ export default function SuratMasuk() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-
       {/* Delete confirmation dialog */}
       <Dialog
         open={deleteDialog.open}

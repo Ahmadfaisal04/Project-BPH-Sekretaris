@@ -10,4 +10,5 @@ type SuratKeluarController interface {
 	Update(c *gin.Context)
 	Delete(c *gin.Context)
 	GetTemplates(c *gin.Context)
+	CheckNoSurat(c *gin.Context)
 }

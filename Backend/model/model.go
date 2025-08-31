@@ -87,9 +87,12 @@ type SuratKeluar struct {
 
 type ArsipSurat struct {
 	ID             uint      `json:"id" gorm:"primaryKey"`
-	SuratID        uint      `json:"surat_id" gorm:"not null"`
-	TipeSurat      string    `json:"tipe_surat" gorm:"type:varchar(50);not null;comment:'masuk atau keluar'"`
+	Nomor          string    `json:"nomor" gorm:"type:varchar(255);not null"`
+	Tanggal        string    `json:"tanggal" gorm:"type:varchar(50);not null"`
+	Perihal        string    `json:"perihal" gorm:"type:text;not null"`
+	TipeSurat      string    `json:"tipe_surat" gorm:"type:varchar(50);not null;comment:'Surat Masuk atau Surat Keluar'"`
 	Keterangan     string    `json:"keterangan" gorm:"type:text"`
+	FileURL        string    `json:"file_url" gorm:"type:varchar(255)"`
 	DiarsipkanOleh uint      `json:"diarsipkan_oleh" gorm:"not null"`
 	TanggalArsip   time.Time `json:"tanggal_arsip" gorm:"autoCreateTime"`
 

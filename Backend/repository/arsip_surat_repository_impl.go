@@ -29,19 +29,19 @@ func (r *arsipSuratRepositoryImpl) GetByID(id uint) (*model.ArsipSurat, error) {
 
 func (r *arsipSuratRepositoryImpl) GetAll() ([]model.ArsipSurat, error) {
 	var arsipSurat []model.ArsipSurat
-	err := r.db.Preload("User").Find(&arsipSurat).Error
+	err := r.db.Preload("User").Order("tanggal_arsip DESC").Find(&arsipSurat).Error
 	return arsipSurat, err
 }
 
 func (r *arsipSuratRepositoryImpl) GetByTipeSurat(tipeSurat string) ([]model.ArsipSurat, error) {
 	var arsipSurat []model.ArsipSurat
-	err := r.db.Preload("User").Where("tipe_surat = ?", tipeSurat).Find(&arsipSurat).Error
+	err := r.db.Preload("User").Where("tipe_surat = ?", tipeSurat).Order("tanggal_arsip DESC").Find(&arsipSurat).Error
 	return arsipSurat, err
 }
 
 func (r *arsipSuratRepositoryImpl) GetByDiarsipkanOleh(diarsipkanOleh uint) ([]model.ArsipSurat, error) {
 	var arsipSurat []model.ArsipSurat
-	err := r.db.Preload("User").Where("diarsipkan_oleh = ?", diarsipkanOleh).Find(&arsipSurat).Error
+	err := r.db.Preload("User").Where("diarsipkan_oleh = ?", diarsipkanOleh).Order("tanggal_arsip DESC").Find(&arsipSurat).Error
 	return arsipSurat, err
 }
 

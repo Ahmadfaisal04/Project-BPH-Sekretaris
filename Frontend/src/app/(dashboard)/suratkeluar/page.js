@@ -1,5 +1,6 @@
 "use client";
 import { API_ENDPOINTS, getHeaders } from "@/config/api";
+import { usePermissions } from "@/hooks/usePermissions";
 import CloseIcon from "@mui/icons-material/Close";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import PrintIcon from "@mui/icons-material/Print";
@@ -91,6 +92,15 @@ const safeFormString = (value) => {
 const suratTemplates = {
   "Surat Peringatan": {
     title: "Surat Peringatan",
+    hasSubCategories: true,
+    subCategories: [
+      "Surat Peringatan 1",
+      "Surat Peringatan 2",
+      "Surat Peringatan 3",
+    ],
+  },
+  "Surat Peringatan 1": {
+    title: "Surat Peringatan 1",
     template: (data) => `
       <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
@@ -180,6 +190,244 @@ const suratTemplates = {
         label: "Kesalahan",
         type: "textarea",
         placeholder: "",
+        required: true,
+      },
+      {
+        name: "tanggal_pembuatan",
+        label: "Tanggal Pembuatan",
+        type: "date",
+        placeholder: "Pilih Tanggal Pembuatan",
+        required: true,
+      },
+      {
+        name: "ttd_nama",
+        label: "Yang Bertandatangan",
+        type: "select",
+        placeholder: "Yang Bertandatangan",
+        required: true,
+        options: ["Ketua Umum"],
+      },
+      {
+        name: "ttd_nra",
+        label: "NRA Penandatangan",
+        type: "text",
+        placeholder: "NRA akan terisi otomatis",
+        required: true,
+        disabled: true,
+      },
+    ],
+  },
+  "Surat Peringatan 2": {
+    title: "Surat Peringatan 2",
+    template: (data) => `
+      <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img src="logo.png" alt="COCONUT Logo" style="width: 70px; height: auto; margin-right: 20px;" />
+            <div>
+              <h2 style="margin: 0; font-size: 14pt;">COMPUTER CLUB ORIENTED NETWORK, UTILITY AND TECHNOLOGY (COCONUT)</h2>
+              <p style="margin: 0; font-size: 10pt;">Jl. Monumen Emmy Saelan III No. 70 Karunrung, Kec. Rappocini, Makassar</p>
+              <p style="margin: 0; font-size: 10pt;">Telp. 085240791254/0895801262897, Website: www.coconut.or.id, Email: hello@coconut.or.id</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 20px; text-align: center;">
+          <p style="font-weight: bold; font-size: 14pt; text-decoration: underline;">SURAT PERINGATAN II</p>
+          <p style="margin: 5px 0; font-weight: bold;">Nomor: ${safeString(
+            data.no_surat
+          )}</p>
+        </div>
+        <div style="margin: 20px 0; text-align: justify;">
+          <p style="margin-bottom: 10px;">Surat Peringatan Kedua ini ditujukan kepada :</p>
+          <table style="margin-left: 40px; margin-bottom: 20px; font-size: 12pt;">
+            <tr><td style="width: 120px;">Nama</td><td style="width: 20px;">:</td><td>${safeString(
+              data.nama
+            )}</td></tr>
+            <tr><td>NRA</td><td>:</td><td>${safeString(data.nra)}</td></tr>
+            <tr><td>Jabatan</td><td>:</td><td>${safeString(
+              data.jabatan
+            )}</td></tr>
+          </table>
+          <p style="margin-bottom: 10px;">Mengingat bahwa yang bersangkutan telah menerima Surat Peringatan I namun masih melakukan pelanggaran berupa :</p>
+          <ol style="margin-left: 40px; margin-bottom: 10px;">
+            ${data.kesalahan
+              .split(",")
+              .map((k, index) => `<li>${safeString(k.trim())}</li>`)
+              .join("")}
+          </ol>
+          <p style="text-indent: 40px; margin-bottom: 10px;">
+            Maka dengan ini kami memberikan Surat Peringatan Kedua. Kami menekankan bahwa pelanggaran berikutnya akan mengakibatkan sanksi yang lebih berat sesuai dengan ketentuan yang berlaku dalam organisasi.
+          </p>
+          <p style="text-indent: 40px; margin-bottom: 10px;">
+            Kami berharap yang bersangkutan dapat memperbaiki sikap dan kinerja serta tidak mengulangi kesalahan serupa di masa mendatang. Demikian surat peringatan kedua ini dikeluarkan untuk menjadi perhatian serius.
+          </p>
+        </div>
+        <div style="margin-top: 60px; text-align: right;">
+          <p style="margin: 0;">Makassar, ${formatTanggalIndonesia(
+            data.tanggal_pembuatan
+          )}</p>
+          <p style="margin: 10px 0; font-weight: bold;">KETUA UMUM</p>
+          <p style="margin-top: 60px; font-weight: bold; text-decoration: underline;">${safeString(
+            data.ttd_nama_lengkap
+          )}</p>
+          <p style="margin: 0;"><b>NRA. ${safeString(data.ttd_nra)}</b></p>
+        </div>
+      </div>
+    `,
+    formFields: [
+      {
+        name: "no_surat",
+        label: "Nomor Surat",
+        type: "text",
+        placeholder: "Masukkan Nomor Surat",
+        required: true,
+      },
+      {
+        name: "nama",
+        label: "Nama Penerima",
+        type: "text",
+        placeholder: "Masukkan Nama Penerima",
+        required: true,
+      },
+      {
+        name: "nra",
+        label: "NRA Penerima",
+        type: "text",
+        placeholder: "Masukkan NRA Penerima",
+        required: true,
+      },
+      {
+        name: "jabatan",
+        label: "Jabatan Penerima",
+        type: "text",
+        placeholder: "Masukkan Jabatan Penerima",
+        required: true,
+      },
+      {
+        name: "kesalahan",
+        label: "Pelanggaran yang Dilakukan",
+        type: "textarea",
+        placeholder:
+          "Jelaskan pelanggaran yang masih dilakukan setelah peringatan pertama",
+        required: true,
+      },
+      {
+        name: "tanggal_pembuatan",
+        label: "Tanggal Pembuatan",
+        type: "date",
+        placeholder: "Pilih Tanggal Pembuatan",
+        required: true,
+      },
+      {
+        name: "ttd_nama",
+        label: "Yang Bertandatangan",
+        type: "select",
+        placeholder: "Yang Bertandatangan",
+        required: true,
+        options: ["Ketua Umum"],
+      },
+      {
+        name: "ttd_nra",
+        label: "NRA Penandatangan",
+        type: "text",
+        placeholder: "NRA akan terisi otomatis",
+        required: true,
+        disabled: true,
+      },
+    ],
+  },
+  "Surat Peringatan 3": {
+    title: "Surat Peringatan 3",
+    template: (data) => `
+      <div style="font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; max-width: 800px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; justify-content: center;">
+            <img src="logo.png" alt="COCONUT Logo" style="width: 70px; height: auto; margin-right: 20px;" />
+            <div>
+              <h2 style="margin: 0; font-size: 14pt;">COMPUTER CLUB ORIENTED NETWORK, UTILITY AND TECHNOLOGY (COCONUT)</h2>
+              <p style="margin: 0; font-size: 10pt;">Jl. Monumen Emmy Saelan III No. 70 Karunrung, Kec. Rappocini, Makassar</p>
+              <p style="margin: 0; font-size: 10pt;">Telp. 085240791254/0895801262897, Website: www.coconut.or.id, Email: hello@coconut.or.id</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 20px; text-align: center;">
+          <p style="font-weight: bold; font-size: 14pt; text-decoration: underline;">SURAT PERINGATAN TERAKHIR</p>
+          <p style="margin: 5px 0; font-weight: bold;">Nomor: ${safeString(
+            data.no_surat
+          )}</p>
+        </div>
+        <div style="margin: 20px 0; text-align: justify;">
+          <p style="margin-bottom: 10px;">Surat Peringatan Terakhir ini ditujukan kepada :</p>
+          <table style="margin-left: 40px; margin-bottom: 20px; font-size: 12pt;">
+            <tr><td style="width: 120px;">Nama</td><td style="width: 20px;">:</td><td>${safeString(
+              data.nama
+            )}</td></tr>
+            <tr><td>NRA</td><td>:</td><td>${safeString(data.nra)}</td></tr>
+            <tr><td>Jabatan</td><td>:</td><td>${safeString(
+              data.jabatan
+            )}</td></tr>
+          </table>
+          <p style="margin-bottom: 10px;">Bahwa yang bersangkutan telah menerima Surat Peringatan I dan II, namun masih tetap melakukan pelanggaran berupa :</p>
+          <ol style="margin-left: 40px; margin-bottom: 10px;">
+            ${data.kesalahan
+              .split(",")
+              .map((k, index) => `<li>${safeString(k.trim())}</li>`)
+              .join("")}
+          </ol>
+          <p style="text-indent: 40px; margin-bottom: 10px;">
+            <strong>MAKA DENGAN INI KAMI MEMBERIKAN SURAT PERINGATAN TERAKHIR</strong>. Apabila yang bersangkutan masih melakukan pelanggaran setelah surat peringatan terakhir ini, maka organisasi akan mengambil tindakan tegas berupa pemberhentian keanggotaan sesuai dengan ketentuan yang berlaku.
+          </p>
+          <p style="text-indent: 40px; margin-bottom: 10px;">
+            Kami berharap yang bersangkutan dapat mengambil hikmah dari peringatan ini dan memperbaiki diri untuk menjadi anggota yang lebih baik. Demikian surat peringatan terakhir ini dikeluarkan dengan penuh pertimbangan.
+          </p>
+        </div>
+        <div style="margin-top: 60px; text-align: right;">
+          <p style="margin: 0;">Makassar, ${formatTanggalIndonesia(
+            data.tanggal_pembuatan
+          )}</p>
+          <p style="margin: 10px 0; font-weight: bold;">KETUA UMUM</p>
+          <p style="margin-top: 60px; font-weight: bold; text-decoration: underline;">${safeString(
+            data.ttd_nama_lengkap
+          )}</p>
+          <p style="margin: 0;"><b>NRA. ${safeString(data.ttd_nra)}</b></p>
+        </div>
+      </div>
+    `,
+    formFields: [
+      {
+        name: "no_surat",
+        label: "Nomor Surat",
+        type: "text",
+        placeholder: "Masukkan Nomor Surat",
+        required: true,
+      },
+      {
+        name: "nama",
+        label: "Nama Penerima",
+        type: "text",
+        placeholder: "Masukkan Nama Penerima",
+        required: true,
+      },
+      {
+        name: "nra",
+        label: "NRA Penerima",
+        type: "text",
+        placeholder: "Masukkan NRA Penerima",
+        required: true,
+      },
+      {
+        name: "jabatan",
+        label: "Jabatan Penerima",
+        type: "text",
+        placeholder: "Masukkan Jabatan Penerima",
+        required: true,
+      },
+      {
+        name: "kesalahan",
+        label: "Pelanggaran yang Dilakukan",
+        type: "textarea",
+        placeholder:
+          "Jelaskan pelanggaran yang masih dilakukan setelah peringatan pertama dan kedua",
         required: true,
       },
       {
@@ -1219,6 +1467,7 @@ const suratTemplates = {
 };
 
 export default function SuratKeluar() {
+  const { canAdd, canEdit, canDelete, canPrint, role } = usePermissions();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedPermohonan, setSelectedPermohonan] = useState(null);
@@ -1227,14 +1476,21 @@ export default function SuratKeluar() {
   const [newRequestOpen, setNewRequestOpen] = useState(false);
   const [newRequestData, setNewRequestData] = useState({
     jenis_surat: "",
+    sub_kategori: "",
     keterangan: "",
   });
+  const [showSubKategori, setShowSubKategori] = useState(false);
   const [viewContentOpen, setViewContentOpen] = useState(false);
   const [viewContent, setViewContent] = useState("");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
+  });
+  const [noSuratValidation, setNoSuratValidation] = useState({
+    isValid: null,
+    message: "",
+    isChecking: false,
   });
   const pdfRef = useRef(null);
 
@@ -1314,10 +1570,27 @@ export default function SuratKeluar() {
       setFormData((prev) => ({ ...prev, [name]: files[0] }));
     }
   };
-
   const handleNewRequestInputChange = (e) => {
     const { name, value } = e.target;
     let updatedData = { ...newRequestData, [name]: value };
+
+    // Handle jenis_surat changes - check if it has sub categories
+    if (name === "jenis_surat") {
+      const template = suratTemplates[value];
+      if (template?.hasSubCategories) {
+        setShowSubKategori(true);
+        updatedData.sub_kategori = ""; // Reset sub kategori
+      } else {
+        setShowSubKategori(false);
+        updatedData.sub_kategori = "";
+      }
+    }
+
+    // Check nomor surat when it changes (for new request form)
+    if (name === "no_surat") {
+      debouncedCheckNoSuratKeluar(value);
+    }
+
     if (name === "ttd_nama") {
       updatedData.ttd_nama_lengkap =
         penandatanganOptions[value]?.namaLengkap || "";
@@ -1332,6 +1605,70 @@ export default function SuratKeluar() {
     if (files && files[0]) {
       setNewRequestData((prev) => ({ ...prev, [name]: files[0] }));
     }
+  };
+
+  // Fungsi untuk mengecek nomor surat keluar
+  const checkNoSuratKeluar = async (noSurat) => {
+    if (!noSurat || noSurat.trim() === "") {
+      setNoSuratValidation({ isValid: null, message: "", isChecking: false });
+      return;
+    }
+
+    setNoSuratValidation({ isValid: null, message: "", isChecking: true });
+
+    try {
+      const response = await fetch(
+        `${API_ENDPOINTS.SURAT_KELUAR_CHECK_NO}?no_surat=${encodeURIComponent(
+          noSurat
+        )}`,
+        {
+          method: "GET",
+          headers: getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Gagal mengecek nomor surat");
+      }
+
+      const result = await response.json();
+
+      if (result.exists) {
+        setNoSuratValidation({
+          isValid: false,
+          message: "Nomor surat sudah ada! Silakan gunakan nomor yang berbeda.",
+          isChecking: false,
+        });
+      } else {
+        setNoSuratValidation({
+          isValid: true,
+          message: "Nomor surat tersedia.",
+          isChecking: false,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking nomor surat:", error);
+      setNoSuratValidation({
+        isValid: null,
+        message: "Gagal mengecek nomor surat. Silakan coba lagi.",
+        isChecking: false,
+      });
+    }
+  };
+
+  // Debounced version untuk avoid spam API calls
+  const [checkTimeoutKeluar, setCheckTimeoutKeluar] = useState(null);
+
+  const debouncedCheckNoSuratKeluar = (noSurat) => {
+    if (checkTimeoutKeluar) {
+      clearTimeout(checkTimeoutKeluar);
+    }
+
+    const timeout = setTimeout(() => {
+      checkNoSuratKeluar(noSurat);
+    }, 500); // Wait 500ms after user stops typing
+
+    setCheckTimeoutKeluar(timeout);
   };
 
   const generatePreviewContent = (templateType, data) => {
@@ -1588,7 +1925,7 @@ export default function SuratKeluar() {
     }
     // Status updated successfully, but we don't maintain a list anymore
   };
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!viewContent) {
       setSnackbar({
         open: true,
@@ -1634,14 +1971,7 @@ export default function SuratKeluar() {
       printFrame.contentWindow.focus();
       printFrame.contentWindow.print();
 
-      // Feedback ke user
-      setSnackbar({
-        open: true,
-        message:
-          "🖨️ Dialog print telah dibuka. Silakan pilih printer dan cetak surat.",
-        severity: "info",
-      });
-
+      // Cleanup print frame
       setTimeout(() => {
         document.body.removeChild(printFrame);
       }, 1000);
@@ -1658,25 +1988,28 @@ export default function SuratKeluar() {
   return (
     <Box>
       <StyledCard>
+        {" "}
         <HeaderBox>
           <Typography variant="h6">Data Surat Keluar</Typography>
-          <Button
-            variant="outlined"
-            startIcon={<OutboxIcon />}
-            aria-label="Tambah Surat Baru"
-            sx={{
-              backgroundColor: "#ffffff",
-              color: "#3097BA",
-              borderColor: "#3097BA",
-              "&:hover": {
+          {canAdd() && (
+            <Button
+              variant="outlined"
+              startIcon={<OutboxIcon />}
+              aria-label="Tambah Surat Baru"
+              sx={{
                 backgroundColor: "#ffffff",
+                color: "#3097BA",
                 borderColor: "#3097BA",
-              },
-            }}
-            onClick={() => setNewRequestOpen(true)}
-          >
-            Tambah Surat
-          </Button>
+                "&:hover": {
+                  backgroundColor: "#ffffff",
+                  borderColor: "#3097BA",
+                },
+              }}
+              onClick={() => setNewRequestOpen(true)}
+            >
+              Tambah Surat
+            </Button>
+          )}
         </HeaderBox>{" "}
         <CardContent>
           {loading ? (
@@ -1695,10 +2028,17 @@ export default function SuratKeluar() {
             </Box>
           )}
         </CardContent>
-      </StyledCard>
+      </StyledCard>{" "}
       <Dialog
         open={newRequestOpen}
-        onClose={() => setNewRequestOpen(false)}
+        onClose={() => {
+          setNewRequestOpen(false);
+          setNoSuratValidation({
+            isValid: null,
+            message: "",
+            isChecking: false,
+          });
+        }}
         maxWidth="sm"
         fullWidth
       >
@@ -1706,7 +2046,14 @@ export default function SuratKeluar() {
           Buat Surat Baru
           <IconButton
             aria-label="close"
-            onClick={() => setNewRequestOpen(false)}
+            onClick={() => {
+              setNewRequestOpen(false);
+              setNoSuratValidation({
+                isValid: null,
+                message: "",
+                isChecking: false,
+              });
+            }}
             sx={{ position: "absolute", right: 8, top: 8 }}
           >
             <CloseIcon />
@@ -1737,159 +2084,235 @@ export default function SuratKeluar() {
                 <MenuItem value="">
                   <em>Pilih Jenis Surat</em>
                 </MenuItem>
-                {Object.keys(suratTemplates).map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type}
-                  </MenuItem>
-                ))}
+                {Object.keys(suratTemplates)
+                  .filter((type) => !suratTemplates[type].hasSubCategories)
+                  .map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                {Object.keys(suratTemplates)
+                  .filter((type) => suratTemplates[type].hasSubCategories)
+                  .map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
-            {newRequestData.jenis_surat &&
-              suratTemplates[newRequestData.jenis_surat]?.formFields.map(
-                (field) => (
-                  <Box key={field.name} sx={{ mb: 3 }}>
-                    <Typography
-                      sx={{
-                        display: "block",
-                        mb: 1,
-                        fontWeight: 500,
-                        color: "#333",
-                      }}
+
+            {/* Sub Kategori Dropdown */}
+            {showSubKategori && newRequestData.jenis_surat && (
+              <FormControl fullWidth sx={{ mb: 3 }}>
+                <Typography
+                  sx={{
+                    display: "block",
+                    mb: 1,
+                    fontWeight: 500,
+                    color: "#333",
+                  }}
+                >
+                  Sub Kategori <span style={{ color: "red" }}>*</span>
+                </Typography>
+                <Select
+                  name="sub_kategori"
+                  value={newRequestData.sub_kategori}
+                  onChange={handleNewRequestInputChange}
+                  sx={{
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#ccc",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#999",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#1976d2",
+                    },
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>Pilih Sub Kategori</em>
+                  </MenuItem>
+                  {suratTemplates[
+                    newRequestData.jenis_surat
+                  ]?.subCategories?.map((subType) => (
+                    <MenuItem key={subType} value={subType}>
+                      {subType}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
+            {(newRequestData.sub_kategori ||
+              (newRequestData.jenis_surat && !showSubKategori)) &&
+              suratTemplates[
+                newRequestData.sub_kategori || newRequestData.jenis_surat
+              ]?.formFields.map((field) => (
+                <Box key={field.name} sx={{ mb: 3 }}>
+                  <Typography
+                    sx={{
+                      display: "block",
+                      mb: 1,
+                      fontWeight: 500,
+                      color: "#333",
+                    }}
+                  >
+                    {field.label}{" "}
+                    {field.required && <span style={{ color: "red" }}>*</span>}
+                  </Typography>
+                  {field.type === "select" ? (
+                    <FormControl
+                      fullWidth
+                      error={field.required && !newRequestData[field.name]}
                     >
-                      {field.label}{" "}
-                      {field.required && (
-                        <span style={{ color: "red" }}>*</span>
-                      )}
-                    </Typography>
-                    {field.type === "select" ? (
-                      <FormControl
-                        fullWidth
-                        error={field.required && !newRequestData[field.name]}
+                      <Select
+                        id={field.name}
+                        name={field.name}
+                        value={newRequestData[field.name] || ""}
+                        onChange={handleNewRequestInputChange}
+                        disabled={field.disabled}
+                        sx={{
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#ccc",
+                          },
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#999",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#1976d2",
+                          },
+                        }}
                       >
-                        <Select
-                          id={field.name}
-                          name={field.name}
-                          value={newRequestData[field.name] || ""}
-                          onChange={handleNewRequestInputChange}
-                          disabled={field.disabled}
-                          sx={{
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#ccc",
-                            },
-                            "&:hover .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#999",
-                            },
-                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "#1976d2",
-                            },
-                          }}
-                        >
-                          <MenuItem value="Ketua Umum">Ketua Umum</MenuItem>
-                          {/* <em>Pilih {field.label}</em>
+                        <MenuItem value="Ketua Umum">Ketua Umum</MenuItem>
+                        {/* <em>Pilih {field.label}</em>
                    </MenuItem>
                   {field.options?.map((option, index) => (
                   <MenuItem key={index} value={option}>
                   {option}
                   </MenuItem> */}
-                          {/* ))} */}
-                        </Select>
-                        {field.required && !newRequestData[field.name] && (
-                          <Typography color="error" variant="caption">
-                            {field.label} wajib diisi
-                          </Typography>
-                        )}
-                        {field.name === "ttd_nama" &&
-                          newRequestData.ttd_nama && (
-                            <Box sx={{ mt: 2 }}>
-                              <Typography
-                                sx={{
-                                  display: "block",
-                                  mb: 1,
-                                  fontWeight: 500,
-                                  color: "#333",
-                                }}
-                              >
-                                Nama Yang Bertandatangan
-                              </Typography>
-                              <TextField
-                                value={newRequestData.ttd_nama_lengkap || ""}
-                                fullWidth
-                                disabled
-                                variant="outlined"
-                                sx={{
-                                  "& .MuiOutlinedInput-root": {
-                                    "& fieldset": { borderColor: "#ccc" },
-                                    "&:hover fieldset": { borderColor: "#999" },
-                                    "&.Mui-focused fieldset": {
-                                      borderColor: "#1976d2",
-                                    },
-                                  },
-                                }}
-                              />
-                            </Box>
-                          )}
-                      </FormControl>
-                    ) : field.type === "file" ? (
-                      <Box>
-                        <input
-                          id={field.name}
-                          name={field.name}
-                          type="file"
-                          accept={field.accept || ".pdf,.doc,.docx"}
-                          onChange={handleNewRequestFileChange}
-                          style={{
-                            marginTop: "8px",
-                            display: "block",
-                            fontSize: "16px",
-                          }}
-                        />
-                        {newRequestData[field.name] && (
+                        {/* ))} */}
+                      </Select>
+                      {field.required && !newRequestData[field.name] && (
+                        <Typography color="error" variant="caption">
+                          {field.label} wajib diisi
+                        </Typography>
+                      )}
+                      {field.name === "ttd_nama" && newRequestData.ttd_nama && (
+                        <Box sx={{ mt: 2 }}>
                           <Typography
-                            variant="caption"
-                            sx={{ mt: 1, color: "#555" }}
+                            sx={{
+                              display: "block",
+                              mb: 1,
+                              fontWeight: 500,
+                              color: "#333",
+                            }}
                           >
-                            File terpilih:{" "}
-                            {newRequestData[field.name].name ||
-                              newRequestData[field.name]}
+                            Nama Yang Bertandatangan
                           </Typography>
-                        )}
-                      </Box>
-                    ) : (
-                      <TextField
+                          <TextField
+                            value={newRequestData.ttd_nama_lengkap || ""}
+                            fullWidth
+                            disabled
+                            variant="outlined"
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                "& fieldset": { borderColor: "#ccc" },
+                                "&:hover fieldset": { borderColor: "#999" },
+                                "&.Mui-focused fieldset": {
+                                  borderColor: "#1976d2",
+                                },
+                              },
+                            }}
+                          />
+                        </Box>
+                      )}
+                    </FormControl>
+                  ) : field.type === "file" ? (
+                    <Box>
+                      <input
                         id={field.name}
                         name={field.name}
-                        value={newRequestData[field.name] || ""}
-                        onChange={handleNewRequestInputChange}
-                        placeholder={field.placeholder}
-                        type={field.type === "date" ? "date" : "text"}
-                        multiline={field.type === "textarea"}
-                        rows={field.type === "textarea" ? 4 : 1}
-                        fullWidth
-                        variant="outlined"
-                        disabled={field.disabled}
-                        InputLabelProps={
-                          field.type === "date" ? { shrink: true } : undefined
-                        }
-                        error={field.required && !newRequestData[field.name]}
-                        helperText={
-                          field.required && !newRequestData[field.name]
-                            ? `${field.label} wajib diisi`
-                            : ""
-                        }
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "& fieldset": { borderColor: "#ccc" },
-                            "&:hover fieldset": { borderColor: "#999" },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#1976d2",
-                            },
-                          },
+                        type="file"
+                        accept={field.accept || ".pdf,.doc,.docx"}
+                        onChange={handleNewRequestFileChange}
+                        style={{
+                          marginTop: "8px",
+                          display: "block",
+                          fontSize: "16px",
                         }}
                       />
-                    )}
-                  </Box>
-                )
-              )}
+                      {newRequestData[field.name] && (
+                        <Typography
+                          variant="caption"
+                          sx={{ mt: 1, color: "#555" }}
+                        >
+                          File terpilih:{" "}
+                          {newRequestData[field.name].name ||
+                            newRequestData[field.name]}
+                        </Typography>
+                      )}
+                    </Box>
+                  ) : (
+                    <TextField
+                      id={field.name}
+                      name={field.name}
+                      value={newRequestData[field.name] || ""}
+                      onChange={handleNewRequestInputChange}
+                      placeholder={field.placeholder}
+                      type={field.type === "date" ? "date" : "text"}
+                      multiline={field.type === "textarea"}
+                      rows={field.type === "textarea" ? 4 : 1}
+                      fullWidth
+                      variant="outlined"
+                      disabled={field.disabled}
+                      InputLabelProps={
+                        field.type === "date" ? { shrink: true } : undefined
+                      }
+                      error={
+                        (field.required && !newRequestData[field.name]) ||
+                        (field.name === "no_surat" &&
+                          noSuratValidation.isValid === false)
+                      }
+                      helperText={
+                        field.name === "no_surat" && noSuratValidation.message
+                          ? noSuratValidation.message
+                          : field.required && !newRequestData[field.name]
+                          ? `${field.label} wajib diisi`
+                          : ""
+                      }
+                      InputProps={
+                        field.name === "no_surat" &&
+                        noSuratValidation.isChecking
+                          ? {
+                              endAdornment: <CircularProgress size={20} />,
+                            }
+                          : undefined
+                      }
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          "& fieldset": { borderColor: "#ccc" },
+                          "&:hover fieldset": { borderColor: "#999" },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#1976d2",
+                          },
+                        },
+                        "& .MuiFormHelperText-root":
+                          field.name === "no_surat"
+                            ? {
+                                color:
+                                  noSuratValidation.isValid === false
+                                    ? "error.main"
+                                    : noSuratValidation.isValid === true
+                                    ? "success.main"
+                                    : "text.secondary",
+                              }
+                            : {},
+                      }}
+                    />
+                  )}
+                </Box>
+              ))}
             <Box sx={{ mb: 3 }}>
               <Typography
                 sx={{ display: "block", mb: 1, fontWeight: 500, color: "#333" }}
@@ -1917,8 +2340,16 @@ export default function SuratKeluar() {
           </Box>
         </DialogContent>
         <DialogActions>
+          {" "}
           <Button
-            onClick={() => setNewRequestOpen(false)} // Tambahkan handler untuk menutup dialog
+            onClick={() => {
+              setNewRequestOpen(false);
+              setNoSuratValidation({
+                isValid: null,
+                message: "",
+                isChecking: false,
+              });
+            }}
             sx={{
               backgroundColor: "#3097BA",
               color: "#fff",
@@ -1931,7 +2362,7 @@ export default function SuratKeluar() {
             }}
           >
             Batal
-          </Button>
+          </Button>{" "}
           <Button
             onClick={async () => {
               if (!newRequestData.jenis_surat) {
@@ -1941,6 +2372,36 @@ export default function SuratKeluar() {
                   severity: "error",
                 });
                 return;
+              }
+
+              // Check if nomor surat is required and validate it
+              const template = suratTemplates[newRequestData.jenis_surat];
+              const noSuratField = template?.formFields?.find(
+                (field) => field.name === "no_surat"
+              );
+
+              if (noSuratField?.required && newRequestData.no_surat) {
+                // Check nomor surat validation
+                if (noSuratValidation.isValid === false) {
+                  setSnackbar({
+                    open: true,
+                    message:
+                      "Nomor surat sudah ada! Silakan gunakan nomor yang berbeda.",
+                    severity: "error",
+                  });
+                  return;
+                }
+
+                // If still checking nomor surat, wait for validation
+                if (noSuratValidation.isChecking) {
+                  setSnackbar({
+                    open: true,
+                    message:
+                      "Sedang mengecek nomor surat. Silakan tunggu sebentar.",
+                    severity: "warning",
+                  });
+                  return;
+                }
               }
 
               const content = generatePreviewContent(
@@ -1953,12 +2414,15 @@ export default function SuratKeluar() {
               setFormData({
                 ...newRequestData,
                 jenis_surat: newRequestData.jenis_surat,
-              });
-
-              // Tampilkan isi surat
+              }); // Tampilkan isi surat
               setViewContent(content);
               setViewContentOpen(true);
               setNewRequestOpen(false);
+              setNoSuratValidation({
+                isValid: null,
+                message: "",
+                isChecking: false,
+              });
               setSnackbar({
                 open: true,
                 message:
@@ -2216,6 +2680,7 @@ export default function SuratKeluar() {
           />{" "}
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1, justifyContent: "flex-end" }}>
+          {" "}
           <Button
             onClick={() => setViewContentOpen(false)}
             variant="outlined"
@@ -2230,38 +2695,42 @@ export default function SuratKeluar() {
           >
             Tutup
           </Button>
-          <Button
-            onClick={handleSaveSurat}
-            variant="contained"
-            startIcon={<SaveIcon />}
-            disabled={loading}
-            sx={{
-              backgroundColor: "#4caf50",
-              color: "white",
-              "&:hover": { backgroundColor: "#388e3c" },
-              "&:active": { backgroundColor: "#2e7d32" },
-              "&:disabled": { backgroundColor: "#ccc" },
-              fontWeight: 600,
-            }}
-          >
-            {loading ? "Menyimpan..." : "Simpan Surat"}
-          </Button>
-          <Button
-            onClick={handlePrint}
-            variant="contained"
-            startIcon={<PrintIcon />}
-            disabled={loading}
-            sx={{
-              backgroundColor: "#2196f3",
-              color: "white",
-              "&:hover": { backgroundColor: "#1976d2" },
-              "&:active": { backgroundColor: "#1565c0" },
-              "&:disabled": { backgroundColor: "#ccc" },
-              fontWeight: 600,
-            }}
-          >
-            Print Surat
-          </Button>
+          {canAdd() && (
+            <Button
+              onClick={handleSaveSurat}
+              variant="contained"
+              startIcon={<SaveIcon />}
+              disabled={loading}
+              sx={{
+                backgroundColor: "#4caf50",
+                color: "white",
+                "&:hover": { backgroundColor: "#388e3c" },
+                "&:active": { backgroundColor: "#2e7d32" },
+                "&:disabled": { backgroundColor: "#ccc" },
+                fontWeight: 600,
+              }}
+            >
+              {loading ? "Menyimpan..." : "Simpan Surat"}
+            </Button>
+          )}
+          {canPrint() && (
+            <Button
+              onClick={handlePrint}
+              variant="contained"
+              startIcon={<PrintIcon />}
+              disabled={loading}
+              sx={{
+                backgroundColor: "#2196f3",
+                color: "white",
+                "&:hover": { backgroundColor: "#1976d2" },
+                "&:active": { backgroundColor: "#1565c0" },
+                "&:disabled": { backgroundColor: "#ccc" },
+                fontWeight: 600,
+              }}
+            >
+              Print Surat
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
       <Snackbar

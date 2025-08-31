@@ -29,19 +29,19 @@ func (r *suratMasukRepositoryImpl) GetByID(id uint) (*model.SuratMasuk, error) {
 
 func (r *suratMasukRepositoryImpl) GetAll() ([]model.SuratMasuk, error) {
 	var suratMasuk []model.SuratMasuk
-	err := r.db.Preload("Creator").Find(&suratMasuk).Error
+	err := r.db.Preload("Creator").Order("created_at DESC").Find(&suratMasuk).Error
 	return suratMasuk, err
 }
 
 func (r *suratMasukRepositoryImpl) GetByCreatedBy(createdBy uint) ([]model.SuratMasuk, error) {
 	var suratMasuk []model.SuratMasuk
-	err := r.db.Preload("Creator").Where("created_by = ?", createdBy).Find(&suratMasuk).Error
+	err := r.db.Preload("Creator").Where("created_by = ?", createdBy).Order("created_at DESC").Find(&suratMasuk).Error
 	return suratMasuk, err
 }
 
 func (r *suratMasukRepositoryImpl) GetByStatus(status string) ([]model.SuratMasuk, error) {
 	var suratMasuk []model.SuratMasuk
-	err := r.db.Preload("Creator").Where("status = ?", status).Find(&suratMasuk).Error
+	err := r.db.Preload("Creator").Where("status = ?", status).Order("created_at DESC").Find(&suratMasuk).Error
 	return suratMasuk, err
 }
 
@@ -57,4 +57,13 @@ func (r *suratMasukRepositoryImpl) Count() (int64, error) {
 	var count int64
 	err := r.db.Model(&model.SuratMasuk{}).Count(&count).Error
 	return count, err
+}
+
+func (r *suratMasukRepositoryImpl) GetByNoSurat(noSurat string) (*model.SuratMasuk, error) {
+	var suratMasuk model.SuratMasuk
+	err := r.db.Where("no_surat = ?", noSurat).First(&suratMasuk).Error
+	if err != nil {
+		return nil, err
+	}
+	return &suratMasuk, nil
 }

@@ -1,9 +1,12 @@
 package dto
 
 type ArsipSuratRequest struct {
-	SuratID    uint   `json:"surat_id" binding:"required"`
-	TipeSurat  string `json:"tipe_surat" binding:"required,oneof=masuk keluar"`
+	Nomor      string `json:"nomor" binding:"required"`
+	Tanggal    string `json:"tanggal" binding:"required"`
+	Perihal    string `json:"perihal" binding:"required"`
+	Tipe       string `json:"tipe" binding:"required"`
 	Keterangan string `json:"keterangan"`
+	FileURL    string `json:"file_url"`
 }
 
 type ArsipSuratUpdateRequest struct {
